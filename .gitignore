@@ -1,0 +1,8 @@
+node_modules/
+.env
+apps/desktop/dist/
+release/
+artifacts/
+backups/
+*.log
+.mysql/

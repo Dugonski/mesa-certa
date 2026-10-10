@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  ATTENDANT
+  CASHIER
+}
+
+enum TabStatus {
+  OPEN
+  PAID
+  CLOSED
+}
+
+enum PaymentMethod {
+  PIX
+  CARD
+}
+
+enum SaleType {
+  UNIT
+  WEIGHT
+}
+
+model User {
+  id           String    @id @default(uuid()) @db.Char(36)
+  name         String    @db.VarChar(100)
+  username     String    @unique @db.VarChar(60)
+  passwordHash String    @db.VarChar(100)
+  role         Role
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  sessions     Session[]
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Char(36)
+  tokenHash String   @unique @db.Char(64)
+  userId    String   @db.Char(36)
+  user      User     @relation(fields: [userId], references: [id])
+  terminal  String   @db.VarChar(80)
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}
+
+model Product {
+  id         String    @id @default(uuid()) @db.Char(36)
+  name       String    @db.VarChar(100)
+  category   String    @db.VarChar(60)
+  priceCents Int
+  saleType   SaleType  @default(UNIT)
+  active     Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  items      TabItem[]
+}
+
+model Tab {
+  id          String       @id @default(uuid()) @db.Char(36)
+  number      Int          @unique @default(autoincrement())
+  label       String       @db.VarChar(80)
+  status      TabStatus    @default(OPEN)
+  version     Int          @default(0)
+  openedBy    String       @db.Char(36)
+  openedAt    DateTime     @default(now())
+  closedAt    DateTime?
+  items       TabItem[]
+  payment     Payment?
+  tableNumber Int?
+  diningTable DiningTable? @relation("TableHistory", fields: [tableNumber], references: [number])
+  activeOn    DiningTable? @relation("ActiveTab")
+
+  @@index([status, openedAt])
+}
+
+model DiningTable {
+  number      Int     @id
+  active      Boolean @default(true)
+  activeTabId String? @unique @db.Char(36)
+  activeTab   Tab?    @relation("ActiveTab", fields: [activeTabId], references: [id])
+  tabs        Tab[]   @relation("TableHistory")
+}
+
+model TabItem {
+  id             String   @id @default(uuid()) @db.Char(36)
+  tabId          String   @db.Char(36)
+  tab            Tab      @relation(fields: [tabId], references: [id])
+  productId      String   @db.Char(36)
+  product        Product  @relation(fields: [productId], references: [id])
+  productName    String   @db.VarChar(100)
+  unitPriceCents Int
+  quantity       Int
+  saleType       SaleType @default(UNIT)
+  weightGrams    Int?
+  note           String   @default("") @db.VarChar(240)
+  addedBy        String   @db.Char(36)
+  createdAt      DateTime @default(now())
+
+  @@index([tabId])
+}
+
+model Payment {
+  id          String        @id @default(uuid()) @db.Char(36)
+  tabId       String        @unique @db.Char(36)
+  tab         Tab           @relation(fields: [tabId], references: [id])
+  method      PaymentMethod
+  amountCents Int
+  recordedBy  String        @db.Char(36)
+  createdAt   DateTime      @default(now())
+  xml         String        @db.LongText
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    String   @db.Char(36)
+  userName  String   @db.VarChar(100)
+  terminal  String   @db.VarChar(80)
+  action    String   @db.VarChar(60)
+  entityId  String   @db.VarChar(100)
+  details   Json
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model CommandReceipt {
+  id          String   @id @db.Char(36)
+  userId      String   @db.Char(36)
+  fingerprint String   @db.Char(64)
+  result      Json
+  createdAt   DateTime @default(now())
+}

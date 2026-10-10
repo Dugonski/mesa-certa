@@ -1,0 +1,67 @@
+{
+  "name": "mesacerta-desktop",
+  "version": "0.5.1",
+  "private": true,
+  "type": "module",
+  "description": "MesaCerta — atendimento, comandas e caixa",
+  "author": "MesaCerta",
+  "main": "apps/desktop/electron/main.cjs",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:ui": "vite --config apps/desktop/vite.config.js",
+    "server": "node --env-file=.env apps/server/src/index.js",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "node --env-file=.env prisma/seed.js",
+    "build": "vite build --config apps/desktop/vite.config.js",
+    "start": "electron .",
+    "dist": "npm run build && electron-builder --win nsis",
+    "test": "node --test tests/*.test.js",
+    "test:ui": "node tests/ui-smoke.mjs",
+    "format": "prettier --write apps packages scripts tests prisma/seed.js package.json",
+    "test:integration": "node --env-file=.env --test tests/integration/*.test.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "bcryptjs": "^3.0.2",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^44.4.1",
+    "electron-builder": "^26.0.12",
+    "prettier": "^3.9.7",
+    "prisma": "^6.19.3",
+    "vite": "^6.4.1"
+  },
+  "overrides": {
+    "@prisma/config": {
+      "deepmerge-ts": "^8.0.0"
+    }
+  },
+  "build": {
+    "appId": "br.com.mesacerta.pdv",
+    "productName": "MesaCerta",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "apps/desktop/dist/**/*",
+      "apps/desktop/electron/**/*",
+      "packages/shared/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
+  }
+}
